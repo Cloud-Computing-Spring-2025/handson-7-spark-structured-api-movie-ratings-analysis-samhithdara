@@ -265,7 +265,124 @@ A summary of **movie-watching trends** over the years, indicating peak years for
 | 2023         | 2800           |
 
 
+
+## **Overview of Tasks done**
+
+This project leverages Apache Spark's PySpark library to analyze a movie ratings dataset. The dataset contains user interactions with movies across various streaming platforms. The goal is to gain insights into binge-watching patterns, churn risk users, and trends over the years.
+
+## **Completed Tasks**
+
+I have implemented and completed the following three tasks:
+
+1. **Detect Binge-Watching Patterns**
+2. **Identify Churn Risk Users**
+3. **Trend Analysis Over the Years**
+
+Each task is implemented in a separate Python script and uses Spark Structured APIs to process the dataset.
+
 ---
+
+## **Task 1: Detect Binge-Watching Patterns**
+
+### **Objective:**
+Identify which age groups binge-watch movies the most by analyzing users who watched 3 or more movies in a single day.
+
+### **Code Explanation:**
+```python
+def detect_binge_watching_patterns(df):
+    """
+    Identify the percentage of users in each age group who binge-watch movies.
+    """
+    binge_watchers_df = df.filter(col("IsBingeWatched") == True)
+    
+    # Group by AgeGroup and count binge-watchers
+    binge_watchers_count_df = binge_watchers_df.groupBy("AgeGroup").agg(count("UserID").alias("BingeWatchers"))
+    
+    # Group by AgeGroup and count total users
+    total_users_count_df = df.groupBy("AgeGroup").agg(count("UserID").alias("TotalUsers"))
+    
+    # Join the two DataFrames on AgeGroup
+    joined_df = binge_watchers_count_df.join(total_users_count_df, on="AgeGroup")
+    
+    # Calculate binge-watching percentage
+    result_df = joined_df.withColumn("BingeWatchPercentage", spark_round((col("BingeWatchers") / col("TotalUsers")) * 100, 2))
+    
+    # Select relevant columns
+    result_df = result_df.select("AgeGroup", "BingeWatchers", "BingeWatchPercentage")
+    
+    return result_df
+```
+
+### **Steps:**
+1. **Filter Users:** The dataset is filtered to include only users who have `IsBingeWatched = True`.
+2. **Group by Age Group:** The number of binge-watchers is counted for each age group.
+3. **Calculate Proportions:** The percentage of binge-watchers in each age group is calculated by dividing the number of binge-watchers by the total number of users in each age group.
+
+### **Expected Output:**
+A summary of binge-watching trends by age group, including the total number and percentage of binge-watchers.
+
+---
+
+## **Task 2: Identify Churn Risk Users**
+
+### **Objective:**
+Find users who are at risk of churn by identifying those with canceled subscriptions and low watch time (<100 minutes).
+
+### **Code Explanation:**
+```python
+def identify_churn_risk_users(df):
+    """
+    Identify users with canceled subscriptions and low watch time (<100 minutes).
+    """
+    churn_risk_df = df.filter((col("SubscriptionStatus") == "Canceled") & (col("WatchTime") < 100))
+    
+    # Count the number of such users
+    churn_risk_count = churn_risk_df.count()
+    
+    # Create a DataFrame to hold the result in the expected format
+    result_df = df.sparkSession.createDataFrame([("Users with low watch time & canceled subscriptions", churn_risk_count)], ["Churn Risk Users", "Total Users"])
+    
+    return result_df
+```
+
+### **Steps:**
+1. **Filter Users:** The dataset is filtered to select users who have `SubscriptionStatus = 'Canceled'` and `WatchTime < 100`.
+2. **Count At-Risk Users:** The number of users that match these criteria is counted and stored in a DataFrame.
+
+### **Expected Output:**
+A summary of churn risk users who canceled their subscriptions and had low engagement (less than 100 minutes of watch time).
+
+---
+
+## **Task 3: Trend Analysis Over the Years**
+
+### **Objective:**
+Analyze how movie-watching trends have changed over the years and find peak years for movie consumption.
+
+### **Code Explanation:**
+```python
+def analyze_movie_watching_trends(df):
+    """
+    Analyze trends in movie watching over the years.
+    """
+    trend_df = df.groupBy("WatchedYear").agg(count("MovieID").alias("Movies Watched"))
+    
+    # Order by WatchedYear to identify trends and peak years
+    result_df = trend_df.orderBy("WatchedYear")
+    
+    return result_df
+```
+
+### **Steps:**
+1. **Group by Watched Year:** The dataset is grouped by `WatchedYear` to count the number of movies watched each year.
+2. **Order by Year:** The results are ordered by `WatchedYear` to track the trends over time.
+
+### **Expected Output:**
+A summary of movie-watching trends over the years, showing the number of movies watched each year and identifying the peak years.
+
+---
+
+This above section provides a clear explanation of the code implementations for the three tasks and how each task is structured.
 
 ## **Grading Criteria**
 
